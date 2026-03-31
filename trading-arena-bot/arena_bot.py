@@ -90,7 +90,7 @@ async def parse_message_with_claude(message_text: str, trader: str) -> list[dict
     """Send message text to Claude, get back structured trade data."""
     try:
         response = claude.messages.create(
-            model='claude-opus-4-6',
+            model='claude-haiku-4-5-20251001',
             max_tokens=1024,
             messages=[{
                 'role': 'user',
