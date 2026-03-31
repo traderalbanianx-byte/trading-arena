@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Arena — Performance You Can Verify</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/arena-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #d4a843;
+    --gold-dim: #a07830;
+    --bg: #08080e;
+    --surface: #0f0f1a;
+    --surface2: #161625;
+    --surface3: #1e1e30;
+    --border: #252538;
+    --border-bright: #35355a;
+    --text: #e8e8f0;
+    --text-dim: #8888aa;
+    --text-muted: #4a4a6a;
+    --green: #22c55e;
+    --red: #ef4444;
+    --green-dim: #16a34a;
+    --red-dim: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+  /* NAV */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(8,8,14,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    height: 64px;
+    display: flex; align-items: center;
+  }
+  .nav-inner {
+    max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .nav-logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--gold), #f0c060);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; color: #000;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .nav-logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 17px; color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .nav-logo-text span { color: var(--gold); }
+  .nav-links {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-link {
+    padding: 7px 14px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; color: var(--text-dim);
+    cursor: pointer; transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .nav-link:hover { color: var(--text); background: var(--surface2); }
+  .nav-link.active { color: var(--gold); background: rgba(212,168,67,0.08); border-color: rgba(212,168,67,0.2); }
+  .nav-cta {
+    padding: 8px 18px; border-radius: 8px;
+    background: var(--gold); color: #000;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    border: none; font-family: 'Space Grotesk', sans-serif;
+  }
+  .nav-cta:hover { background: #e6bc55; transform: translateY(-1px); }
+
+  /* DELAY BANNER */
+  .delay-banner {
+    background: rgba(212,168,67,0.08);
+    border-bottom: 1px solid rgba(212,168,67,0.2);
+    padding: 8px 24px;
+    display: flex; align-items: center; justify-content: center; gap-10px;
+    font-size: 13px; color: var(--gold);
+    text-align: center;
+    margin-top: 64px;
+  }
+
+  /* PAGE WRAPPER */
+  .page { display: none; }
+  .page.active { display: block; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card-sm { padding: 16px; }
+  .card:hover { border-color: var(--border-bright); }
+
+  /* BADGES */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-green { background: rgba(34,197,94,0.12); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,0.12); color: var(--red); }
+  .badge-gold { background: rgba(212,168,67,0.12); color: var(--gold); }
+  .badge-dim { background: var(--surface2); color: var(--text-dim); }
+  .badge-spot { background: rgba(99,102,241,0.12); color: #818cf8; }
+  .badge-futures { background: rgba(245,158,11,0.12); color: #fbbf24; }
+
+  /* STAT TILES */
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .stat-tile-label { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .stat-tile-value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  .stat-tile-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+
+  /* TABLES */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap;
+  }
+  td {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    font-size: 14px; color: var(--text);
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 10px; padding: 4px; }
+  .tab-btn {
+    flex: 1; padding: 8px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: var(--text-dim);
+    cursor: pointer; transition: all 0.15s; border: none;
+    background: transparent; font-family: 'Inter', sans-serif;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: var(--surface3); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* SECTION HEADERS */
+  .section-label {
+    font-size: 11px; font-weight: 700; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 28px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.5px; line-height: 1.2;
+  }
+  .section-sub { font-size: 16px; color: var(--text-dim); margin-top: 8px; }
+
+  /* RANK BADGE */
+  .rank-1 { background: linear-gradient(135deg, #d4a843, #f0c060); color: #000; font-weight: 800; }
+  .rank-2 { background: rgba(180,180,200,0.15); color: #c0c0d0; }
+  .rank-3 { background: rgba(176,100,50,0.15); color: #cd7f32; }
+  .rank-n { background: var(--surface2); color: var(--text-dim); }
+
+  /* PROGRESS BAR */
+  .progress-bar { height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+  /* EQUITY CURVE */
+  .chart-container { position: relative; height: 180px; }
+
+  /* HERO */
+  .hero-gradient {
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(212,168,67,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 80% 50%, rgba(99,102,241,0.06) 0%, transparent 50%),
+                var(--bg);
+  }
+
+  /* TICKER */
+  .ticker-wrap { overflow: hidden; white-space: nowrap; }
+  .ticker-inner {
+    display: inline-block;
+    animation: ticker 30s linear infinite;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* GLOW */
+  .gold-glow { box-shadow: 0 0 30px rgba(212,168,67,0.15); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 500px; width: 100%;
+    position: relative;
+  }
+
+  /* ADMIN FORM */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; padding: 10px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px;
+    font-family: 'Inter', sans-serif; outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--gold); }
+  .form-select {
+    width: 100%; padding: 10px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px;
+    font-family: 'Inter', sans-serif; outline: none;
+    appearance: none; cursor: pointer;
+  }
+  .form-select:focus { border-color: var(--gold); }
+  .btn-primary {
+    padding: 10px 20px; background: var(--gold); color: #000;
+    border: none; border-radius: 8px; font-weight: 700; font-size: 14px;
+    cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-primary:hover { background: #e6bc55; }
+  .btn-ghost {
+    padding: 10px 20px; background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 8px; font-weight: 500; font-size: 14px;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border-bright); }
+
+  /* STATUS DOT */
+  .dot-green { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse-green 2s infinite; }
+  .dot-yellow { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); display: inline-block; }
+  @keyframes pulse-green { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .section-title { font-size: 22px; }
+    .stat-tile-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="navigate('home')">
+      <div class="nav-logo-icon">TA</div>
+      <div class="nav-logo-text">Trading <span>Arena</span></div>
+    </div>
+    <div class="nav-links">
+      <div class="nav-link" onclick="navigate('home')" id="nav-home">Home</div>
+      <div class="nav-link" onclick="navigate('trades')" id="nav-trades">Active Trades</div>
+      <div class="nav-link" onclick="navigate('leaderboard')" id="nav-leaderboard">Leaderboard</div>
+      <div class="nav-link" onclick="navigate('traders')" id="nav-traders">Traders</div>
+      <div class="nav-link" onclick="navigate('reports')" id="nav-reports">Reports</div>
+      <div class="nav-link" onclick="navigate('methodology')" id="nav-methodology">Methodology</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="nav-link" onclick="navigate('admin')" id="nav-admin" style="font-size:12px;padding:6px 12px;color:var(--text-muted)">Admin</div>
+      <button class="nav-cta" onclick="showJoinModal()">Join Arena</button>
+    </div>
+  </div>
+</nav>
+
+<!-- DELAY BANNER -->
+<div class="delay-banner" id="delay-banner">
+  <span style="margin-right:8px;">⏱</span>
+  All performance data is published with a <strong style="margin:0 4px;">48-hour delay</strong> to protect live signal integrity. &nbsp;
+  <span style="color:var(--text-dim);">For real-time access →</span>
+  <span onclick="showJoinModal()" style="cursor:pointer;text-decoration:underline;margin-left:4px;">Join the Arena</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- HOME PAGE -->
+<!-- ============================================================ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <section class="hero-gradient" style="padding: 80px 0 60px;">
+    <div class="container">
+      <div style="max-width:760px;margin:0 auto;text-align:center;">
+        <div class="section-label" style="margin-bottom:16px;">Dr Profit's Arena — Verified Performance</div>
+        <h1 style="font-size:clamp(36px,5vw,64px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;color:var(--text);margin-bottom:20px;">
+          Performance you can verify.<br>
+          <span style="color:var(--gold);">Signals you have to earn.</span>
+        </h1>
+        <p style="font-size:18px;color:var(--text-dim);max-width:560px;margin:0 auto 32px;line-height:1.7;">
+          Four professional traders. Every trade logged, verified, and published. No cherry-picking. No deleted losses. No real-time leakage.
+        </p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <button class="nav-cta" style="padding:14px 28px;font-size:16px;" onclick="showJoinModal()">Join the Arena</button>
+          <button class="btn-ghost" style="padding:14px 28px;font-size:15px;" onclick="navigate('leaderboard')">View Leaderboard</button>
+        </div>
+      </div>
+
+      <!-- STATS ROW -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:56px;max-width:900px;margin-left:auto;margin-right:auto;">
+        <div class="stat-tile gold-glow" style="text-align:center;border-color:rgba(212,168,67,0.2);">
+          <div class="stat-tile-label">Trades Logged</div>
+          <div class="stat-tile-value" style="color:var(--gold);" id="stat-total-trades">—</div>
+          <div class="stat-tile-sub">Closed trades</div>
+        </div>
+        <div class="stat-tile" style="text-align:center;">
+          <div class="stat-tile-label">Combined Win Rate</div>
+          <div class="stat-tile-value" id="stat-win-rate">—</div>
+          <div class="stat-tile-sub">Closed trades only</div>
+        </div>
+        <div class="stat-tile" style="text-align:center;">
+          <div class="stat-tile-label">Best Single Trade</div>
+          <div class="stat-tile-value" style="color:var(--green);" id="stat-best-trade">—</div>
+          <div class="stat-tile-sub" id="stat-best-trade-sub">All time</div>
+        </div>
+        <div class="stat-tile" style="text-align:center;">
+          <div class="stat-tile-label">Active Traders</div>
+          <div class="stat-tile-value">4</div>
+          <div class="stat-tile-sub">Cash · Gauls · Titan · Bamp</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TICKER -->
+  <div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;overflow:hidden;">
+    <div class="ticker-wrap">
+      <div class="ticker-inner" id="ticker-content"></div>
+    </div>
+  </div>
+
+  <!-- ACTIVE TRADES PREVIEW -->
+  <section style="padding:64px 0;">
+    <div class="container">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="section-label">Currently In Play</div>
+          <h2 class="section-title">Active Trades <span style="font-size:16px;font-weight:400;color:var(--text-dim);">(48h delayed)</span></h2>
+        </div>
+        <button class="btn-ghost" onclick="navigate('trades')">View All →</button>
+      </div>
+      <div id="home-active-trades"></div>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD PREVIEW -->
+  <section style="padding:0 0 64px;">
+    <div class="container">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="section-label">Monthly Rankings</div>
+          <h2 class="section-title">Overall Leaderboard</h2>
+        </div>
+        <button class="btn-ghost" onclick="navigate('leaderboard')">Full Leaderboard →</button>
+      </div>
+      <div id="home-leaderboard"></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section style="padding:0 0 80px;">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:48px;">
+        <div class="section-label">Transparency Model</div>
+        <h2 class="section-title">How the Arena works</h2>
+        <p class="section-sub" style="max-width:500px;margin:8px auto 0;">Built to prove performance publicly, without compromising live signal integrity.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;">
+        <div class="card" style="border-color:rgba(212,168,67,0.15);">
+          <div style="font-size:28px;margin-bottom:12px;">📡</div>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">Traders Post in Telegram</h3>
+          <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">Cash, Gauls, Titan, and Bamp each run a private Telegram channel. Every call, every entry, every exit is logged automatically.</p>
+        </div>
+        <div class="card" style="border-color:rgba(212,168,67,0.15);">
+          <div style="font-size:28px;margin-bottom:12px;">⏱</div>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">48-Hour Delay Applied</h3>
+          <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">All data is held for 48 hours before publishing publicly. You see real trades, real performance — just not in time to front-run them.</p>
+        </div>
+        <div class="card" style="border-color:rgba(212,168,67,0.15);">
+          <div style="font-size:28px;margin-bottom:12px;">📊</div>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">Rankings Use Closed Trades Only</h3>
+          <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">No unrealized PnL in rankings. Monthly leaderboards are built on realized results. Risk-adjusted — not just raw return.</p>
+        </div>
+        <div class="card" style="border-color:rgba(212,168,67,0.15);">
+          <div style="font-size:28px;margin-bottom:12px;">🔒</div>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">Join for Real-Time Access</h3>
+          <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">One Whop subscription gives you all 4 live channels. The public site proves quality — membership gives you the edge.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section style="padding:0 0 80px;">
+    <div class="container">
+      <div class="card gold-glow" style="background:linear-gradient(135deg,rgba(212,168,67,0.08),rgba(212,168,67,0.03));border-color:rgba(212,168,67,0.25);text-align:center;padding:56px 40px;">
+        <div class="section-label" style="margin-bottom:16px;">Ready to trade with the best?</div>
+        <h2 style="font-size:clamp(24px,4vw,40px);font-weight:800;letter-spacing:-0.8px;margin-bottom:16px;">Get real-time access to all 4 traders</h2>
+        <p style="font-size:16px;color:var(--text-dim);max-width:480px;margin:0 auto 32px;line-height:1.6;">One subscription. Four elite channels. Live entries, live exits, full thesis — before the 48-hour delay kicks in.</p>
+        <button class="nav-cta" style="padding:16px 36px;font-size:17px;" onclick="showJoinModal()">Join the Arena Now</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============================================================ -->
+<!-- ACTIVE TRADES PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-trades">
+  <div class="container" style="padding-top:40px;padding-bottom:80px;">
+    <div style="margin-bottom:32px;">
+      <div class="section-label">What we're currently in</div>
+      <h1 class="section-title">Active Trades Board</h1>
+      <p class="section-sub">All positions published with a 48-hour delay. Last sync: <span style="color:var(--gold);" id="last-sync-time"></span></p>
+    </div>
+
+    <!-- FILTERS -->
+    <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+      <button class="tab-btn active" onclick="filterTrades('all',this)" style="flex:unset;padding:8px 16px;">All</button>
+      <button class="tab-btn" onclick="filterTrades('long',this)" style="flex:unset;padding:8px 16px;">Long Only</button>
+      <button class="tab-btn" onclick="filterTrades('short',this)" style="flex:unset;padding:8px 16px;">Short Only</button>
+      <button class="tab-btn" onclick="filterTrades('spot',this)" style="flex:unset;padding:8px 16px;">Spot</button>
+      <button class="tab-btn" onclick="filterTrades('futures',this)" style="flex:unset;padding:8px 16px;">Futures</button>
+    </div>
+
+    <div id="active-trades-grid"></div>
+
+    <!-- CLOSED TRADES TABLE -->
+    <div style="margin-top:56px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div class="section-label">Recent History</div>
+          <h2 style="font-size:22px;font-weight:700;">Recently Closed Trades</h2>
+        </div>
+        <div class="badge badge-dim">48h delayed</div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap">
+          <table id="closed-trades-table"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- LEADERBOARD PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-leaderboard">
+  <div class="container" style="padding-top:40px;padding-bottom:80px;">
+    <div style="margin-bottom:32px;">
+      <div class="section-label">March 2026</div>
+      <h1 class="section-title">Monthly Rankings</h1>
+      <p class="section-sub">Closed trades only. Risk-adjusted scoring. No cherry-picking.</p>
+    </div>
+
+    <div class="tabs" style="max-width:640px;margin-bottom:32px;" id="lb-tabs">
+      <button class="tab-btn active" onclick="switchLeaderboard('overall',this)">Overall</button>
+      <button class="tab-btn" onclick="switchLeaderboard('spot',this)">Best Spot</button>
+      <button class="tab-btn" onclick="switchLeaderboard('futures',this)">Best Futures</button>
+      <button class="tab-btn" onclick="switchLeaderboard('risk',this)">Risk-Adjusted</button>
+    </div>
+
+    <div id="leaderboard-content"></div>
+
+    <!-- SCORING METHODOLOGY NOTE -->
+    <div class="card" style="margin-top:32px;border-color:rgba(212,168,67,0.15);background:rgba(212,168,67,0.03);">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="font-size:20px;flex-shrink:0;">ℹ️</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--gold);margin-bottom:4px;">Ranking Formula</div>
+          <p style="font-size:13px;color:var(--text-dim);line-height:1.6;">Rankings are computed from <strong style="color:var(--text);">closed, realized trades only</strong>. Score = (Total Return % × 0.3) + (Win Rate × 0.25) + (Risk-Adjusted Return × 0.3) − (Max Drawdown penalty × 0.15). Spot and futures are ranked separately. Open trade PnL is never included.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TRADERS PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-traders">
+  <div class="container" style="padding-top:40px;padding-bottom:80px;">
+    <div style="margin-bottom:40px;">
+      <div class="section-label">The Squad</div>
+      <h1 class="section-title">Arena Traders</h1>
+      <p class="section-sub">Four traders. Four Telegram channels. One subscription.</p>
+    </div>
+    <div id="traders-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TRADER PROFILE PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-profile">
+  <div class="container" style="padding-top:40px;padding-bottom:80px;">
+    <button onclick="navigate('traders')" class="btn-ghost" style="margin-bottom:28px;padding:8px 16px;font-size:13px;">← Back to Traders</button>
+    <div id="profile-content"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- REPORTS PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-reports">
+  <div class="container" style="padding-top:40px;padding-bottom:80px;">
+    <div style="margin-bottom:40px;">
+      <div class="section-label">Monthly Archive</div>
+      <h1 class="section-title">Performance Reports</h1>
+      <p class="section-sub">End-of-month scorecards for every trader. Auditable. Permanent.</p>
+    </div>
+    <div id="reports-content"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- METHODOLOGY PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-methodology">
+  <div class="container" style="padding-top:40px;padding-bottom:80px;max-width:800px;">
+    <div style="margin-bottom:40px;">
+      <div class="section-label">Transparency First</div>
+      <h1 class="section-title">Methodology</h1>
+      <p class="section-sub">How we track, score, delay, and publish — and why.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <div class="card">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">01 — What counts as a trade</h3>
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.7;">Any position posted in a trader's official Telegram channel counts — both spot and futures crypto, long and short. The trade is logged when the entry is published. Exit is logged when the trader confirms the close. Partial closes are tracked separately and labeled.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">02 — The 48-hour delay</h3>
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.7;">All data — new entries, updates to open trades, exits, and PnL — is held for exactly 48 hours before appearing on this website. The delay applies uniformly. Nothing is backdated. The timestamp shown is when the trade was originally posted, not when it appears here. This means what you see is real performance — just not actionable in real time.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">03 — How monthly rankings are calculated</h3>
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.7;margin-bottom:12px;">Rankings use <strong style="color:var(--text);">closed, realized trades only</strong>. Unrealized PnL from open positions is never included in the score. The composite ranking score is weighted across four metrics:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="stat-tile card-sm">
+            <div class="stat-tile-label">Total Return %</div>
+            <div style="font-size:20px;font-weight:700;color:var(--gold);">30%</div>
+            <div class="stat-tile-sub">Weight in score</div>
+          </div>
+          <div class="stat-tile card-sm">
+            <div class="stat-tile-label">Win Rate</div>
+            <div style="font-size:20px;font-weight:700;color:var(--gold);">25%</div>
+            <div class="stat-tile-sub">Weight in score</div>
+          </div>
+          <div class="stat-tile card-sm">
+            <div class="stat-tile-label">Risk-Adjusted Return</div>
+            <div style="font-size:20px;font-weight:700;color:var(--gold);">30%</div>
+            <div class="stat-tile-sub">Weight in score</div>
+          </div>
+          <div class="stat-tile card-sm">
+            <div class="stat-tile-label">Max Drawdown</div>
+            <div style="font-size:20px;font-weight:700;color:var(--red);">−15%</div>
+            <div class="stat-tile-sub">Penalty weight</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">04 — Four separate leaderboards</h3>
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.7;">Spot and futures trades are never mixed in the same ranking. A trader who dominates futures but avoids spot would skew a combined board. The four boards are: Overall (all closed trades), Best Spot, Best Futures, and Best Risk-Adjusted. A trader can rank differently on each.</p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">05 — Anti-gaming safeguards</h3>
+        <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;padding-left:20px;">
+          <li>All trades posted in official channels are logged — no selective inclusion</li>
+          <li>Losing trades cannot be deleted after logging</li>
+          <li>Partial wins are tracked at the target hit, not assumed at the full target</li>
+          <li>Open trade PnL is displayed but never counted in rankings</li>
+          <li>Records missing leverage or execution confirmation are flagged with a data quality note</li>
+          <li>Full audit trail is preserved — nothing is retroactively altered</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">06 — Data quality flags</h3>
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.7;">Not every post includes leverage or a confirmed execution. When data is incomplete, the trade is still counted but marked with a quality flag visible on the record. We do not exclude trades due to missing fields — we flag them and include them.</p>
+      </div>
+
+      <div class="card" style="border-color:rgba(212,168,67,0.2);background:rgba(212,168,67,0.03);">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;">Questions or disputes?</h3>
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.7;">If you believe a trade has been logged incorrectly, the full Telegram post is the source of record. Every trade links back to its original message. Contact Dr Profit's team directly through the Arena community.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ADMIN PAGE -->
+<!-- ============================================================ -->
+<div class="page" id="page-admin">
+  <div id="admin-login-screen">
+    <div style="min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:380px;width:100%;padding:40px;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div class="nav-logo-icon" style="margin:0 auto 12px;width:44px;height:44px;font-size:18px;">TA</div>
+          <h2 style="font-size:20px;font-weight:700;">Admin Access</h2>
+          <p style="font-size:14px;color:var(--text-dim);margin-top:6px;">Internal use only</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="admin-password-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')checkAdminPassword()">
+        </div>
+        <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="checkAdminPassword()">Access Dashboard</button>
+        <div id="admin-error" style="color:var(--red);font-size:13px;text-align:center;margin-top:10px;display:none;">Incorrect password</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-dashboard" style="display:none;">
+    <div class="container" style="padding-top:40px;padding-bottom:80px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="section-label">Internal Dashboard</div>
+          <h1 class="section-title">Admin Panel <span style="font-size:14px;font-weight:500;color:var(--text-dim);">— Undelayed view</span></h1>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-primary" onclick="showAddTradeModal()">+ Add Trade</button>
+          <button class="btn-ghost" onclick="exportCSV()">Export CSV</button>
+          <button class="btn-ghost" onclick="logoutAdmin()">Logout</button>
+        </div>
+      </div>
+
+      <!-- ADMIN STATS -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;" id="admin-stats"></div>
+
+      <!-- FULL TRADE LEDGER -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="font-size:16px;font-weight:700;">Full Trade Ledger <span style="font-size:13px;font-weight:400;color:var(--text-dim);">(no delay)</span></h3>
+          <div class="badge badge-gold">Live data</div>
+        </div>
+        <div class="table-wrap">
+          <table id="admin-trade-table"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- JOIN MODAL -->
+<!-- ============================================================ -->
+<div id="join-modal" style="display:none;" class="modal-overlay" onclick="if(event.target===this)hideJoinModal()">
+  <div class="modal-box">
+    <button onclick="hideJoinModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">×</button>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div class="nav-logo-icon" style="margin:0 auto 12px;width:48px;height:48px;font-size:20px;">TA</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Join the Arena</h2>
+      <p style="font-size:15px;color:var(--text-dim);line-height:1.6;">One subscription unlocks real-time access to all 4 trader channels on Telegram.</p>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">What you get</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:14px;display:flex;align-items:center;gap-8px;"><span style="color:var(--green);margin-right:8px;">✓</span> Live Telegram channel — Trader Cash</div>
+        <div style="font-size:14px;display:flex;align-items:center;gap-8px;"><span style="color:var(--green);margin-right:8px;">✓</span> Live Telegram channel — Trader Gauls</div>
+        <div style="font-size:14px;display:flex;align-items:center;gap-8px;"><span style="color:var(--green);margin-right:8px;">✓</span> Live Telegram channel — Trader Titan</div>
+        <div style="font-size:14px;display:flex;align-items:center;gap-8px;"><span style="color:var(--green);margin-right:8px;">✓</span> Live Telegram channel — Trader Bamp</div>
+        <div style="font-size:14px;display:flex;align-items:center;gap-8px;"><span style="color:var(--green);margin-right:8px;">✓</span> Real-time entries, exits & full thesis</div>
+      </div>
+    </div>
+    <button class="btn-primary" style="width:100%;padding:14px;font-size:16px;" onclick="window.open('#','_blank');hideJoinModal()">Subscribe on Whop →</button>
+    <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:12px;">Managed through Whop. Cancel anytime.</p>
+  </div>
+</div>
+
+<!-- ADD TRADE MODAL -->
+<div id="add-trade-modal" style="display:none;" class="modal-overlay" onclick="if(event.target===this)document.getElementById('add-trade-modal').style.display='none'">
+  <div class="modal-box" style="max-width:580px;">
+    <button onclick="document.getElementById('add-trade-modal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">×</button>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:24px;">Add Trade</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Trader</label>
+        <select class="form-select" id="at-trader">
+          <option>Cash</option><option>Gauls</option><option>Titan</option><option>Bamp</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Asset</label>
+        <input class="form-input" id="at-asset" placeholder="e.g. BTC">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Market Type</label>
+        <select class="form-select" id="at-market">
+          <option>futures</option><option>spot</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Side</label>
+        <select class="form-select" id="at-side">
+          <option>long</option><option>short</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Entry Price</label>
+        <input class="form-input" id="at-entry" placeholder="e.g. 64392">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stop Loss</label>
+        <input class="form-input" id="at-sl" placeholder="e.g. 63744">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target 1</label>
+        <input class="form-input" id="at-t1" placeholder="e.g. 66329">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target 2</label>
+        <input class="form-input" id="at-t2" placeholder="e.g. 69138">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Leverage (optional)</label>
+        <input class="form-input" id="at-leverage" placeholder="e.g. 10x">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="at-status">
+          <option>open</option><option>closed</option><option>stopped</option><option>partial</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes / Thesis</label>
+      <input class="form-input" id="at-notes" placeholder="Brief summary of trade thesis">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn-ghost" onclick="document.getElementById('add-trade-modal').style.display='none'">Cancel</button>
+      <button class="btn-primary" onclick="addTrade()">Save Trade</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const TRADERS = {
+  Cash: {
+    name: 'Trader Cash',
+    tag: 'CASH',
+    avatar: 'CA',
+    color: '#d4a843',
+    description: 'Precision entries. High-conviction setups with clear structure. BTC and ETH specialist.',
+    style: 'Swing + Position',
+    exchange: 'Bybit',
+    since: 'Jan 2024',
+    stats: {
+      totalReturn: 127.4,
+      winRate: 68.2,
+      maxDrawdown: -11.8,
+      riskAdjusted: 8.4,
+      trades: 34,
+      avgReturn: 3.74,
+      bestTrade: '+41.2% (BTC Long, Feb)',
+      worstTrade: '-8.1% (ETH Short, Jan)',
+      consistency: 'High — 5 consecutive winning weeks in Q1',
+      spotReturn: 89.2,
+      futuresReturn: 165.3,
+      spotWR: 71,
+      futuresWR: 65,
+      spotDD: -7.2,
+      futuresDD: -14.1,
+      spotRA: 9.1,
+      futuresRA: 7.8
+    },
+    equity: [100, 108, 103, 119, 131, 128, 144, 152, 148, 163, 171, 227.4]
+  },
+  Gauls: {
+    name: 'Trader Gauls',
+    tag: 'GAULS',
+    avatar: 'GA',
+    color: '#818cf8',
+    description: 'Risk-first mindset. Tightest drawdown on the board. Altcoin rotation expert.',
+    style: 'Swing Trader',
+    exchange: 'Bybit / Binance',
+    since: 'Mar 2024',
+    stats: {
+      totalReturn: 89.3,
+      winRate: 72.1,
+      maxDrawdown: -7.9,
+      riskAdjusted: 9.1,
+      trades: 28,
+      avgReturn: 3.19,
+      bestTrade: '+28.7% (SOL Long, Mar)',
+      worstTrade: '-5.2% (AVAX Short, Feb)',
+      consistency: 'Very High — lowest drawdown on team',
+      spotReturn: 72.1,
+      futuresReturn: 112.4,
+      spotWR: 75,
+      futuresWR: 69,
+      spotDD: -5.1,
+      futuresDD: -9.8,
+      spotRA: 10.2,
+      futuresRA: 8.1
+    },
+    equity: [100, 106, 110, 108, 118, 124, 131, 138, 135, 152, 161, 189.3]
+  },
+  Titan: {
+    name: 'Trader Titan',
+    tag: 'TITAN',
+    avatar: 'TI',
+    color: '#22c55e',
+    description: 'High-octane leverage trader. Biggest returns — and biggest conviction calls.',
+    style: 'Leverage / Scalp',
+    exchange: 'Bybit',
+    since: 'Jun 2023',
+    stats: {
+      totalReturn: 203.1,
+      winRate: 61.4,
+      maxDrawdown: -20.7,
+      riskAdjusted: 6.7,
+      trades: 41,
+      avgReturn: 4.95,
+      bestTrade: '+87.3% (BTC Long, Jan)',
+      worstTrade: '-16.4% (ETH Short, Feb)',
+      consistency: 'Moderate — high variance, high reward',
+      spotReturn: 104.2,
+      futuresReturn: 301.7,
+      spotWR: 64,
+      futuresWR: 59,
+      spotDD: -11.2,
+      futuresDD: -24.3,
+      spotRA: 7.2,
+      futuresRA: 6.4
+    },
+    equity: [100, 122, 108, 148, 163, 141, 192, 218, 197, 251, 278, 303.1]
+  },
+  Bamp: {
+    name: 'Trader Bamp',
+    tag: 'BAMP',
+    avatar: 'BA',
+    color: '#f97316',
+    description: 'Strategic multi-target plays. Patient. Runs concurrent spot and futures books.',
+    style: 'Multi-Target / Position',
+    exchange: 'Binance / OKX',
+    since: 'Sep 2023',
+    stats: {
+      totalReturn: 156.2,
+      winRate: 65.3,
+      maxDrawdown: -14.9,
+      riskAdjusted: 7.8,
+      trades: 37,
+      avgReturn: 4.22,
+      bestTrade: '+62.1% (BNB Long, Jan)',
+      worstTrade: '-11.8% (BTC Short, Mar)',
+      consistency: 'Good — steady accumulation with clear risk per trade',
+      spotReturn: 118.4,
+      futuresReturn: 198.3,
+      spotWR: 68,
+      futuresWR: 62,
+      spotDD: -9.4,
+      futuresDD: -17.2,
+      spotRA: 8.9,
+      futuresRA: 7.1
+    },
+    equity: [100, 113, 119, 128, 121, 141, 159, 171, 168, 194, 212, 256.2]
+  }
+};
+
+const now = new Date();
+const minus2d = (d) => { const x = new Date(d); x.setDate(x.getDate()-2); return x; };
+const fmtDate = (d) => d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const fmtTime = (d) => d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
+let TRADES = [
+  // ACTIVE TRADES (published with 48h delay)
+  { id:1, trader:'Cash', asset:'BTC', market:'futures', side:'long', entry:64392, current:67210, exit:null, sl:63744, targets:[66329,69138], openDate: minus2d(new Date(now-3*864e5)), closeDate:null, status:'open', pnl:4.4, leverage:'10x', notes:'VWAP reclaim + Value Area bounce. Target T2.', source:'Telegram', quality:'complete' },
+  { id:2, trader:'Gauls', asset:'SOL', market:'futures', side:'long', entry:142.5, current:158.3, exit:null, sl:137.8, targets:[152,165,178], openDate: minus2d(new Date(now-2*864e5)), closeDate:null, status:'open', pnl:11.1, leverage:'5x', notes:'Breakout above key resistance. Holding for T2.', source:'Telegram', quality:'complete' },
+  { id:3, trader:'Titan', asset:'ETH', market:'futures', side:'short', entry:3410, current:3290, exit:null, sl:3520, targets:[3250,3100,2980], openDate: minus2d(new Date(now-4*864e5)), closeDate:null, status:'open', pnl:3.5, leverage:'15x', notes:'Bearish divergence on 4H. Targeting liquidity below.', source:'Telegram', quality:'missing_leverage' },
+  { id:4, trader:'Bamp', asset:'BNB', market:'spot', side:'long', entry:412, current:441, exit:null, sl:398, targets:[435,460,490], openDate: minus2d(new Date(now-5*864e5)), closeDate:null, status:'open', pnl:7.0, leverage:null, notes:'Accumulation zone. Multi-target play.', source:'Telegram', quality:'complete' },
+  { id:5, trader:'Cash', asset:'ETH', market:'spot', side:'long', entry:3180, current:3290, exit:null, sl:3090, targets:[3320,3480], openDate: minus2d(new Date(now-864e5)), closeDate:null, status:'open', pnl:3.5, leverage:null, notes:'Support hold. Clean setup.', source:'Telegram', quality:'complete' },
+
+  // CLOSED TRADES
+  { id:6, trader:'Titan', asset:'BTC', market:'futures', side:'long', entry:58400, current:67210, exit:67100, sl:56200, targets:[62000,67000,72000], openDate: new Date(now-14*864e5), closeDate: new Date(now-3*864e5), status:'closed', pnl:87.3, leverage:'20x', notes:'Monthly candle open play.', source:'Telegram', quality:'complete' },
+  { id:7, trader:'Bamp', asset:'BNB', market:'futures', side:'long', entry:318, current:441, exit:390, sl:298, targets:[360,395,420], openDate: new Date(now-20*864e5), closeDate: new Date(now-5*864e5), status:'closed', pnl:62.1, leverage:'8x', notes:'BNB ecosystem narrative.', source:'Telegram', quality:'complete' },
+  { id:8, trader:'Cash', asset:'BTC', market:'futures', side:'short', entry:69092, current:67210, exit:64203, sl:70936, targets:[67012,64203,57662], openDate: new Date(now-10*864e5), closeDate: new Date(now-4*864e5), status:'closed', pnl:41.2, leverage:'12x', notes:'Short off VWAP + VAH confluence.', source:'Telegram', quality:'complete' },
+  { id:9, trader:'Gauls', asset:'SOL', market:'spot', side:'long', entry:98, current:158, exit:127, sl:92, targets:[110,125,140], openDate: new Date(now-25*864e5), closeDate: new Date(now-8*864e5), status:'closed', pnl:28.7, leverage:null, notes:'Accumulation complete.', source:'Telegram', quality:'complete' },
+  { id:10, trader:'Titan', asset:'ETH', market:'futures', side:'short', entry:3820, current:3290, exit:3190, sl:3960, targets:[3600,3400,3200], openDate: new Date(now-12*864e5), closeDate: new Date(now-6*864e5), status:'closed', pnl:16.2, leverage:'15x', notes:'ETH weekly rejection.', source:'Telegram', quality:'missing_leverage' },
+  { id:11, trader:'Cash', asset:'ETH', market:'futures', side:'long', entry:3050, current:3290, exit:3140, sl:2980, targets:[3200,3380], openDate: new Date(now-18*864e5), closeDate: new Date(now-9*864e5), status:'closed', pnl:8.1, leverage:'8x', notes:'Reclaim of 3050 level.', source:'Telegram', quality:'complete' },
+  { id:12, trader:'Bamp', asset:'BTC', market:'spot', side:'short', entry:71200, current:67210, exit:63400, sl:73000, targets:[68000,64000], openDate: new Date(now-8*864e5), closeDate: new Date(now-2*864e5), status:'closed', pnl:-11.8, leverage:null, notes:'Stopped out on breakout.', source:'Telegram', quality:'complete' },
+  { id:13, trader:'Gauls', asset:'AVAX', market:'futures', side:'short', entry:38.2, current:32, exit:36.2, sl:40.1, targets:[36,33,29], openDate: new Date(now-15*864e5), closeDate: new Date(now-7*864e5), status:'stopped', pnl:-5.2, leverage:'5x', notes:'Stopped. Structure invalidated.', source:'Telegram', quality:'complete' },
+  { id:14, trader:'Titan', asset:'BTC', market:'futures', side:'short', entry:65400, current:67210, exit:67400, sl:67000, targets:[62000,58000], openDate: new Date(now-7*864e5), closeDate: new Date(now-864e5), status:'stopped', pnl:-16.4, leverage:'20x', notes:'Stopped out. Wrong side.', source:'Telegram', quality:'complete' },
+];
+
+// ============================================================
+// ROUTER
+// ============================================================
+let currentPage = 'home';
+let adminUnlocked = false;
+let currentTrader = null;
+let currentLB = 'overall';
+let tradeFilter = 'all';
+
+function navigate(page, param) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + (page === 'profile' ? 'profile' : page)).classList.add('active');
+
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+
+  if (page === 'profile' && param) {
+    currentTrader = param;
+    renderProfile(param);
+  }
+  if (page === 'leaderboard') renderLeaderboard(currentLB);
+  if (page === 'traders') renderTraders();
+  if (page === 'trades') renderActiveTrades();
+  if (page === 'reports') renderReports();
+  if (page === 'home') renderHome();
+  if (page === 'admin') renderAdmin();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function pct(n, decimals=1) {
+  const s = n.toFixed(decimals);
+  const color = n >= 0 ? 'var(--green)' : 'var(--red)';
+  const sign = n >= 0 ? '+' : '';
+  return `<span style="color:${color};font-weight:600;">${sign}${s}%</span>`;
+}
+
+function sideTag(side) {
+  return side === 'long'
+    ? `<span class="badge badge-green">↑ LONG</span>`
+    : `<span class="badge badge-red">↓ SHORT</span>`;
+}
+
+function marketTag(market) {
+  return market === 'spot'
+    ? `<span class="badge badge-spot">SPOT</span>`
+    : `<span class="badge badge-futures">FUTURES</span>`;
+}
+
+function statusTag(status) {
+  const map = {
+    open: `<span class="badge badge-gold"><span class="dot-green" style="width:6px;height:6px;margin-right:4px;"></span>OPEN</span>`,
+    closed: `<span class="badge badge-dim">CLOSED</span>`,
+    stopped: `<span class="badge badge-red">STOPPED</span>`,
+    partial: `<span class="badge badge-dim">PARTIAL</span>`
+  };
+  return map[status] || status;
+}
+
+function qualityTag(q) {
+  if (q === 'complete') return `<span class="badge badge-green" style="font-size:11px;">✓ Complete</span>`;
+  return `<span class="badge badge-dim" style="font-size:11px;">⚠ ${q.replace(/_/g,' ')}</span>`;
+}
+
+function rankBadge(n) {
+  const cls = n === 1 ? 'rank-1' : n === 2 ? 'rank-2' : n === 3 ? 'rank-3' : 'rank-n';
+  const label = n === 1 ? '🥇' : n === 2 ? '🥈' : n === 3 ? '🥉' : `#${n}`;
+  return `<span class="badge ${cls}" style="font-size:14px;padding:4px 12px;">${label}</span>`;
+}
+
+function traderAvatar(name) {
+  const t = TRADERS[name];
+  return `<div style="width:32px;height:32px;border-radius:8px;background:${t.color}22;border:1px solid ${t.color}44;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:${t.color};flex-shrink:0;">${t.avatar}</div>`;
+}
+
+// ============================================================
+// RENDER HOME
+// ============================================================
+function renderHome() {
+  // Active trades preview (first 3 open)
+  const open = TRADES.filter(t => t.status === 'open').slice(0, 3);
+  const grid = document.getElementById('home-active-trades');
+  if (grid) {
+    grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${open.map(t => activeTradeCard(t)).join('')}</div>`;
+  }
+
+  // Leaderboard preview
+  const lbEl = document.getElementById('home-leaderboard');
+  if (lbEl) {
+    const ranked = getRanked('overall');
+    lbEl.innerHTML = `<div class="card" style="padding:0;overflow:hidden;">${leaderboardTable(ranked, 'overall')}</div>`;
+  }
+
+  // Ticker
+  const ticker = document.getElementById('ticker-content');
+  if (ticker) {
+    const items = TRADES.filter(t => t.status === 'closed').slice(0, 8);
+    const html = items.map(t => {
+      const col = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+      const sign = t.pnl >= 0 ? '+' : '';
+      return `<span style="padding:0 24px;font-size:13px;color:var(--text-dim);">
+        <strong style="color:var(--text);">${t.asset}</strong>
+        <span style="color:${col};margin:0 6px;">${sign}${t.pnl.toFixed(1)}%</span>
+        <span style="color:var(--text-muted);">— ${t.trader}</span>
+      </span>`;
+    }).join('') + items.map(t => {
+      const col = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+      const sign = t.pnl >= 0 ? '+' : '';
+      return `<span style="padding:0 24px;font-size:13px;color:var(--text-dim);">
+        <strong style="color:var(--text);">${t.asset}</strong>
+        <span style="color:${col};margin:0 6px;">${sign}${t.pnl.toFixed(1)}%</span>
+        <span style="color:var(--text-muted);">— ${t.trader}</span>
+      </span>`;
+    }).join('');
+    ticker.innerHTML = html;
+  }
+}
+
+function activeTradeCard(t) {
+  const trader = TRADERS[t.trader];
+  const col = t.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const sign = t.pnl >= 0 ? '+' : '';
+  const progress = t.targets.length > 0 ? Math.min(100, Math.abs(((t.current - t.entry) / (t.targets[0] - t.entry)) * 100)) : 0;
+  return `
+    <div class="card" style="border-color:${trader.color}22;cursor:pointer;" onclick="navigate('profile','${t.trader}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${traderAvatar(t.trader)}
+          <div>
+            <div style="font-size:14px;font-weight:700;">${t.trader}</div>
+            <div style="font-size:12px;color:var(--text-dim);">${fmtDate(t.openDate)} <span class="badge badge-dim" style="font-size:10px;margin-left:4px;">−48h</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">${sideTag(t.side)}${marketTag(t.market)}</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px;">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;">${t.asset}</div>
+        <div style="font-size:20px;font-weight:700;color:${col};">${sign}${t.pnl.toFixed(1)}%</div>
+        <div style="font-size:12px;color:var(--text-muted);">unrealized</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;font-size:12px;">
+        <div><div style="color:var(--text-muted);">Entry zone</div><div style="color:var(--text);font-weight:600;">${t.entry.toLocaleString()}</div></div>
+        <div><div style="color:var(--text-muted);">Current</div><div style="color:var(--text);font-weight:600;">${t.current.toLocaleString()}</div></div>
+        <div><div style="color:var(--text-muted);">Stop</div><div style="color:var(--red);font-weight:600;">${t.sl.toLocaleString()}</div></div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${progress}%;background:${t.side==='long'?'var(--green)':'var(--red)'};"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Progress to T1: ${progress.toFixed(0)}%</div>
+    </div>`;
+}
+
+// ============================================================
+// RENDER ACTIVE TRADES
+// ============================================================
+function renderActiveTrades() {
+  const lastSync = document.getElementById('last-sync-time');
+  if (lastSync) {
+    const d = new Date(Date.now() - 2 * 3600000);
+    lastSync.textContent = fmtTime(d);
+  }
+
+  const grid = document.getElementById('active-trades-grid');
+  if (grid) {
+    const filtered = TRADES.filter(t => {
+      if (t.status !== 'open') return false;
+      if (tradeFilter === 'all') return true;
+      if (tradeFilter === 'long') return t.side === 'long';
+      if (tradeFilter === 'short') return t.side === 'short';
+      if (tradeFilter === 'spot') return t.market === 'spot';
+      if (tradeFilter === 'futures') return t.market === 'futures';
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text-dim);">No active trades match this filter.</div>`;
+    } else {
+      grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${filtered.map(t => activeTradeCard(t)).join('')}</div>`;
+    }
+  }
+
+  // Closed trades table
+  const closed = TRADES.filter(t => t.status !== 'open').sort((a,b) => b.closeDate - a.closeDate);
+  const table = document.getElementById('closed-trades-table');
+  if (table) {
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Trader</th>
+          <th>Asset</th>
+          <th>Type</th>
+          <th>Side</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>PnL</th>
+          <th>Status</th>
+          <th>Quality</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${closed.map(t => `
+          <tr>
+            <td style="color:var(--text-dim);font-size:13px;">${fmtDate(t.closeDate)}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${traderAvatar(t.trader)}
+                <span style="font-weight:600;">${t.trader}</span>
+              </div>
+            </td>
+            <td><strong>${t.asset}</strong></td>
+            <td>${marketTag(t.market)}</td>
+            <td>${sideTag(t.side)}</td>
+            <td style="color:var(--text-dim);">${t.entry.toLocaleString()}</td>
+            <td style="color:var(--text-dim);">${t.exit ? t.exit.toLocaleString() : '—'}</td>
+            <td>${pct(t.pnl)}</td>
+            <td>${statusTag(t.status)}</td>
+            <td>${qualityTag(t.quality)}</td>
+          </tr>
+        `).join('')}
+      </tbody>`;
+  }
+}
+
+function filterTrades(f, btn) {
+  tradeFilter = f;
+  document.querySelectorAll('[onclick^="filterTrades"]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderActiveTrades();
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+function getRanked(board) {
+  return Object.keys(TRADERS).map(name => {
+    const t = TRADERS[name];
+    const s = t.stats;
+    let ret, wr, dd, ra;
+
+    if (board === 'spot') { ret = s.spotReturn; wr = s.spotWR; dd = s.spotDD; ra = s.spotRA; }
+    else if (board === 'futures') { ret = s.futuresReturn; wr = s.futuresWR; dd = s.futuresDD; ra = s.futuresRA; }
+    else { ret = s.totalReturn; wr = s.winRate; dd = s.maxDrawdown; ra = s.riskAdjusted; }
+
+    const score = (ret * 0.3) + (wr * 0.25) + (ra * 10 * 0.3) - (Math.abs(dd) * 0.15);
+    return { name, ret, wr, dd, ra, score, trades: s.trades };
+  }).sort((a, b) => b.score - a.score);
+}
+
+function leaderboardTable(ranked, board) {
+  const header = board === 'risk'
+    ? `<th>Risk-Adj Score</th><th>Win Rate</th><th>Max DD</th>`
+    : `<th>${board === 'spot' ? 'Spot' : board === 'futures' ? 'Futures' : 'Total'} Return</th><th>Win Rate</th><th>Max DD</th>`;
+
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Trader</th>
+          ${header}
+          <th>Risk-Adj</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${ranked.map((r, i) => {
+          const t = TRADERS[r.name];
+          return `
+            <tr style="cursor:pointer;" onclick="navigate('profile','${r.name}')">
+              <td>${rankBadge(i + 1)}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  ${traderAvatar(r.name)}
+                  <div>
+                    <div style="font-weight:700;">${t.name}</div>
+                    <div style="font-size:12px;color:var(--text-dim);">${t.style}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${pct(r.ret)}</td>
+              <td><span style="font-weight:600;">${r.wr.toFixed(1)}%</span></td>
+              <td>${pct(r.dd)}</td>
+              <td><span style="color:var(--gold);font-weight:600;">${r.ra.toFixed(1)}</span></td>
+              <td><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:${i===0?'var(--gold)':'var(--text)'};">${r.score.toFixed(1)}</span></td>
+            </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderLeaderboard(board) {
+  currentLB = board;
+  const ranked = getRanked(board);
+  const el = document.getElementById('leaderboard-content');
+  if (!el) return;
+
+  const boardLabels = { overall:'Overall', spot:'Best Spot', futures:'Best Futures', risk:'Best Risk-Adjusted' };
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px;">
+      ${ranked.map((r, i) => {
+        const t = TRADERS[r.name];
+        const isFirst = i === 0;
+        return `
+          <div class="stat-tile ${isFirst ? 'gold-glow' : ''}" style="${isFirst ? 'border-color:rgba(212,168,67,0.3);' : ''}cursor:pointer;" onclick="navigate('profile','${r.name}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              ${rankBadge(i + 1)}
+              ${traderAvatar(r.name)}
+            </div>
+            <div style="font-size:16px;font-weight:700;">${t.name}</div>
+            <div style="font-size:26px;font-weight:800;color:${r.ret >= 0 ? 'var(--green)' : 'var(--red)'};font-family:'Space Grotesk',sans-serif;margin:6px 0;">+${r.ret.toFixed(1)}%</div>
+            <div style="font-size:12px;color:var(--text-dim);">${r.wr.toFixed(1)}% win rate</div>
+          </div>`;
+      }).join('')}
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:16px 24px;border-bottom:1px solid var(--border);">
+        <span style="font-size:14px;font-weight:700;">${boardLabels[board]} — March 2026</span>
+        <span style="font-size:13px;color:var(--text-dim);margin-left:12px;">Closed trades only · Realized PnL</span>
+      </div>
+      ${leaderboardTable(ranked, board)}
+    </div>`;
+}
+
+function switchLeaderboard(board, btn) {
+  document.querySelectorAll('#lb-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLeaderboard(board);
+}
+
+// ============================================================
+// TRADERS GRID
+// ============================================================
+function renderTraders() {
+  const grid = document.getElementById('traders-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.keys(TRADERS).map(name => {
+    const t = TRADERS[name];
+    const s = t.stats;
+    const open = TRADES.filter(x => x.trader === name && x.status === 'open').length;
+    return `
+      <div class="card" style="cursor:pointer;border-color:${t.color}22;transition:all 0.2s;" onclick="navigate('profile','${name}')"
+           onmouseover="this.style.borderColor='${t.color}55';this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.borderColor='${t.color}22';this.style.transform=''">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="width:48px;height:48px;border-radius:12px;background:${t.color}22;border:1px solid ${t.color}44;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:${t.color};">${t.avatar}</div>
+          <div style="display:flex;gap:6px;">
+            ${open > 0 ? `<span class="badge badge-gold"><span class="dot-green" style="width:6px;height:6px;margin-right:4px;"></span>${open} open</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:4px;">${t.name}</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.5;">${t.description}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+          <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Return</div>
+            <div style="font-size:18px;font-weight:800;color:var(--green);font-family:'Space Grotesk',sans-serif;">+${s.totalReturn.toFixed(1)}%</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Win Rate</div>
+            <div style="font-size:18px;font-weight:800;font-family:'Space Grotesk',sans-serif;">${s.winRate.toFixed(1)}%</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Max DD</div>
+            <div style="font-size:18px;font-weight:800;color:var(--red);font-family:'Space Grotesk',sans-serif;">${s.maxDrawdown.toFixed(1)}%</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Risk-Adj</div>
+            <div style="font-size:18px;font-weight:800;color:var(--gold);font-family:'Space Grotesk',sans-serif;">${s.riskAdjusted.toFixed(1)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--text-dim);">
+          <span>${t.style}</span>
+          <span style="color:${t.color};font-weight:600;">View Profile →</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============================================================
+// TRADER PROFILE
+// ============================================================
+function renderProfile(name) {
+  const t = TRADERS[name];
+  const s = t.stats;
+  const el = document.getElementById('profile-content');
+  if (!el || !t) return;
+
+  const ranked = getRanked('overall');
+  const rank = ranked.findIndex(r => r.name === name) + 1;
+  const traderTrades = TRADES.filter(x => x.trader === name);
+  const openTrades = traderTrades.filter(x => x.status === 'open');
+  const closedTrades = traderTrades.filter(x => x.status !== 'open');
+
+  el.innerHTML = `
+    <!-- HEADER -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:36px;">
+      <div style="display:flex;align-items:center;gap:20px;">
+        <div style="width:72px;height:72px;border-radius:16px;background:${t.color}22;border:2px solid ${t.color}55;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:${t.color};">${t.avatar}</div>
+        <div>
+          <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px;">${t.name}</div>
+          <div style="font-size:14px;color:var(--text-dim);margin-top:4px;">${t.style} · ${t.exchange} · Since ${t.since}</div>
+          <div style="font-size:14px;color:var(--text-dim);margin-top:6px;max-width:480px;">${t.description}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        ${rankBadge(rank)}
+        <div style="font-size:13px;color:var(--text-dim);">Overall rank · March 2026</div>
+      </div>
+    </div>
+
+    <!-- SCORECARD -->
+    <div class="section-label" style="margin-bottom:12px;">Monthly Scorecard — March 2026</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:32px;">
+      <div class="stat-tile" style="border-color:rgba(34,197,94,0.2);">
+        <div class="stat-tile-label">Total Return</div>
+        <div class="stat-tile-value" style="color:var(--green);">+${s.totalReturn.toFixed(1)}%</div>
+        <div class="stat-tile-sub">Realized trades</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-label">Win Rate</div>
+        <div class="stat-tile-value">${s.winRate.toFixed(1)}%</div>
+        <div class="stat-tile-sub">${s.trades} closed trades</div>
+      </div>
+      <div class="stat-tile" style="border-color:rgba(239,68,68,0.15);">
+        <div class="stat-tile-label">Max Drawdown</div>
+        <div class="stat-tile-value" style="color:var(--red);">${s.maxDrawdown.toFixed(1)}%</div>
+        <div class="stat-tile-sub">Worst peak-to-trough</div>
+      </div>
+      <div class="stat-tile" style="border-color:rgba(212,168,67,0.2);">
+        <div class="stat-tile-label">Risk-Adjusted</div>
+        <div class="stat-tile-value" style="color:var(--gold);">${s.riskAdjusted.toFixed(1)}</div>
+        <div class="stat-tile-sub">Return / Risk ratio</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-label">Avg Return/Trade</div>
+        <div class="stat-tile-value">${s.avgReturn.toFixed(2)}%</div>
+        <div class="stat-tile-sub">Per closed trade</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-label">Total Trades</div>
+        <div class="stat-tile-value">${s.trades}</div>
+        <div class="stat-tile-sub">Closed this month</div>
+      </div>
+    </div>
+
+    <!-- EQUITY CURVE -->
+    <div class="card" style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;">Equity Curve</div>
+          <div style="font-size:13px;color:var(--text-dim);">Normalized to 100. Closed trades. 48h delayed.</div>
+        </div>
+        <div style="font-size:20px;font-weight:800;color:var(--green);font-family:'Space Grotesk',sans-serif;">+${(t.equity[t.equity.length-1] - 100).toFixed(1)}%</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="equity-chart-${name}"></canvas>
+      </div>
+    </div>
+
+    <!-- SPOT vs FUTURES -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+      <div class="card" style="border-color:rgba(99,102,241,0.2);">
+        <div class="badge badge-spot" style="margin-bottom:12px;">SPOT</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Return</span>${pct(s.spotReturn)}</div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Win Rate</span><span style="font-weight:600;">${s.spotWR}%</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Max DD</span>${pct(s.spotDD)}</div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Risk-Adj</span><span style="color:var(--gold);font-weight:600;">${s.spotRA.toFixed(1)}</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(245,158,11,0.2);">
+        <div class="badge badge-futures" style="margin-bottom:12px;">FUTURES</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Return</span>${pct(s.futuresReturn)}</div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Win Rate</span><span style="font-weight:600;">${s.futuresWR}%</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Max DD</span>${pct(s.futuresDD)}</div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim);">Risk-Adj</span><span style="color:var(--gold);font-weight:600;">${s.futuresRA.toFixed(1)}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRADE HIGHLIGHTS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+      <div class="card" style="border-color:rgba(34,197,94,0.15);">
+        <div style="font-size:12px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Best Trade</div>
+        <div style="font-size:16px;font-weight:700;">${s.bestTrade}</div>
+      </div>
+      <div class="card" style="border-color:rgba(239,68,68,0.15);">
+        <div style="font-size:12px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Worst Trade</div>
+        <div style="font-size:16px;font-weight:700;">${s.worstTrade}</div>
+      </div>
+    </div>
+
+    <!-- CONSISTENCY NOTE -->
+    <div class="card" style="margin-bottom:32px;background:rgba(212,168,67,0.03);border-color:rgba(212,168,67,0.15);">
+      <div style="font-size:12px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Consistency Note</div>
+      <div style="font-size:14px;color:var(--text-dim);">${s.consistency}</div>
+    </div>
+
+    <!-- OPEN TRADES -->
+    ${openTrades.length > 0 ? `
+    <div style="margin-bottom:32px;">
+      <div class="section-label" style="margin-bottom:12px;">Active Positions (48h delayed)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+        ${openTrades.map(t2 => activeTradeCard(t2)).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- TRADE HISTORY -->
+    <div>
+      <div class="section-label" style="margin-bottom:12px;">Trade History</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Asset</th><th>Type</th><th>Side</th><th>Entry</th><th>Exit</th><th>PnL</th><th>Status</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+              ${closedTrades.map(tr => `
+                <tr>
+                  <td style="color:var(--text-dim);font-size:13px;">${fmtDate(tr.closeDate)}</td>
+                  <td><strong>${tr.asset}</strong></td>
+                  <td>${marketTag(tr.market)}</td>
+                  <td>${sideTag(tr.side)}</td>
+                  <td style="color:var(--text-dim);">${tr.entry.toLocaleString()}</td>
+                  <td style="color:var(--text-dim);">${tr.exit ? tr.exit.toLocaleString() : '—'}</td>
+                  <td>${pct(tr.pnl)}</td>
+                  <td>${statusTag(tr.status)}</td>
+                  <td style="color:var(--text-dim);font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;">${tr.notes}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  // Render equity chart
+  setTimeout(() => {
+    const ctx = document.getElementById(`equity-chart-${name}`);
+    if (!ctx) return;
+    if (ctx._chartInstance) ctx._chartInstance.destroy();
+    const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].slice(0, t.equity.length);
+    ctx._chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: t.equity,
+          borderColor: t.color,
+          backgroundColor: `${t.color}15`,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointBackgroundColor: t.color,
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: {
+          backgroundColor: '#161625', borderColor: '#252538', borderWidth: 1,
+          titleColor: '#e8e8f0', bodyColor: '#8888aa', padding: 10,
+          callbacks: { label: ctx => `  ${ctx.raw.toFixed(1)} (${(ctx.raw - 100).toFixed(1)}%)` }
+        }},
+        scales: {
+          x: { grid: { color: '#252538' }, ticks: { color: '#4a4a6a', font: { size: 11 } } },
+          y: { grid: { color: '#252538' }, ticks: { color: '#4a4a6a', font: { size: 11 }, callback: v => v.toFixed(0) } }
+        }
+      }
+    });
+  }, 50);
+}
+
+// ============================================================
+// REPORTS
+// ============================================================
+function renderReports() {
+  const el = document.getElementById('reports-content');
+  if (!el) return;
+
+  const months = ['March 2026', 'February 2026', 'January 2026'];
+
+  el.innerHTML = months.map((month, mi) => `
+    <div style="margin-bottom:48px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h2 style="font-size:20px;font-weight:700;">${month}</h2>
+        <button class="btn-ghost" style="font-size:13px;padding:8px 14px;" onclick="downloadReport('${month}')">↓ Download HTML</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+        ${Object.keys(TRADERS).map(name => {
+          const t = TRADERS[name];
+          const s = t.stats;
+          const modifier = mi === 0 ? 1 : mi === 1 ? 0.85 : 0.7;
+          const ret = (s.totalReturn * modifier).toFixed(1);
+          const wr = (s.winRate * (1 - mi * 0.03)).toFixed(1);
+          const dd = (s.maxDrawdown * modifier).toFixed(1);
+          return `
+            <div class="card" onclick="navigate('profile','${name}')" style="cursor:pointer;border-color:${t.color}22;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:${t.color}22;border:1px solid ${t.color}44;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:${t.color};">${t.avatar}</div>
+                <div style="font-size:15px;font-weight:700;">${t.name}</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                <div><span style="color:var(--text-muted);">Return</span><div style="font-weight:700;color:var(--green);">+${ret}%</div></div>
+                <div><span style="color:var(--text-muted);">Win Rate</span><div style="font-weight:700;">${wr}%</div></div>
+                <div><span style="color:var(--text-muted);">Max DD</span><div style="font-weight:700;color:var(--red);">${dd}%</div></div>
+                <div><span style="color:var(--text-muted);">Trades</span><div style="font-weight:700;">${Math.floor(s.trades * modifier + 5)}</div></div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function downloadReport(month) {
+  alert(`HTML report for ${month} would download here.\n\nIn production: generates a formatted PDF/HTML file with full scorecard for all 4 traders.`);
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+function checkAdminPassword() {
+  const pw = document.getElementById('admin-password-input').value;
+  if (pw === 'arena2024') {
+    adminUnlocked = true;
+    document.getElementById('admin-login-screen').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    renderAdminDashboard();
+  } else {
+    document.getElementById('admin-error').style.display = 'block';
+  }
+}
+
+function renderAdmin() {
+  if (!adminUnlocked) return;
+  document.getElementById('admin-login-screen').style.display = 'none';
+  document.getElementById('admin-dashboard').style.display = 'block';
+  renderAdminDashboard();
+}
+
+function renderAdminDashboard() {
+  const statsEl = document.getElementById('admin-stats');
+  if (statsEl) {
+    const open = TRADES.filter(t => t.status === 'open').length;
+    const closed = TRADES.filter(t => t.status === 'closed').length;
+    const wins = TRADES.filter(t => t.status === 'closed' && t.pnl > 0).length;
+    statsEl.innerHTML = `
+      <div class="stat-tile"><div class="stat-tile-label">Total Trades</div><div class="stat-tile-value">${TRADES.length}</div></div>
+      <div class="stat-tile"><div class="stat-tile-label">Open</div><div class="stat-tile-value" style="color:var(--gold);">${open}</div></div>
+      <div class="stat-tile"><div class="stat-tile-label">Closed</div><div class="stat-tile-value">${closed}</div></div>
+      <div class="stat-tile"><div class="stat-tile-label">Win Rate</div><div class="stat-tile-value">${closed > 0 ? ((wins/closed)*100).toFixed(1) : 0}%</div></div>
+      <div class="stat-tile"><div class="stat-tile-label">Pending Publish</div><div class="stat-tile-value" style="color:var(--gold);">${TRADES.filter(t => {const h = (Date.now()-t.openDate)/3600000; return h < 48;}).length}</div><div class="stat-tile-sub">Within 48h delay</div></div>`;
+  }
+
+  const table = document.getElementById('admin-trade-table');
+  if (!table) return;
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>ID</th><th>Trader</th><th>Asset</th><th>Type</th><th>Side</th><th>Entry</th><th>Exit</th>
+        <th>PnL</th><th>Status</th><th>Leverage</th><th>Quality</th><th>Open Date</th><th>Delay Left</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${[...TRADES].reverse().map(t => {
+        const hoursOld = (Date.now() - t.openDate) / 3600000;
+        const delayLeft = Math.max(0, 48 - hoursOld);
+        const delayTag = delayLeft > 0
+          ? `<span class="badge badge-gold">${delayLeft.toFixed(0)}h left</span>`
+          : `<span class="badge badge-green">Published</span>`;
+        return `
+          <tr>
+            <td style="color:var(--text-muted);">#${t.id}</td>
+            <td>${traderAvatar(t.trader)} <span style="margin-left:6px;font-weight:600;">${t.trader}</span></td>
+            <td><strong>${t.asset}</strong></td>
+            <td>${marketTag(t.market)}</td>
+            <td>${sideTag(t.side)}</td>
+            <td>${t.entry.toLocaleString()}</td>
+            <td>${t.exit ? t.exit.toLocaleString() : '—'}</td>
+            <td>${t.pnl !== null ? pct(t.pnl) : '—'}</td>
+            <td>${statusTag(t.status)}</td>
+            <td style="color:var(--text-dim);">${t.leverage || '—'}</td>
+            <td>${qualityTag(t.quality)}</td>
+            <td style="color:var(--text-dim);font-size:12px;">${fmtDate(t.openDate)}</td>
+            <td>${delayTag}</td>
+          </tr>`;
+      }).join('')}
+    </tbody>`;
+}
+
+function showAddTradeModal() {
+  document.getElementById('add-trade-modal').style.display = 'flex';
+}
+
+function addTrade() {
+  const newTrade = {
+    id: TRADES.length + 1,
+    trader: document.getElementById('at-trader').value,
+    asset: document.getElementById('at-asset').value.toUpperCase() || 'BTC',
+    market: document.getElementById('at-market').value,
+    side: document.getElementById('at-side').value,
+    entry: parseFloat(document.getElementById('at-entry').value) || 0,
+    current: parseFloat(document.getElementById('at-entry').value) || 0,
+    exit: null,
+    sl: parseFloat(document.getElementById('at-sl').value) || 0,
+    targets: [parseFloat(document.getElementById('at-t1').value)||0, parseFloat(document.getElementById('at-t2').value)||0].filter(x=>x>0),
+    openDate: new Date(),
+    closeDate: null,
+    status: document.getElementById('at-status').value,
+    pnl: 0,
+    leverage: document.getElementById('at-leverage').value || null,
+    notes: document.getElementById('at-notes').value || '',
+    source: 'Telegram',
+    quality: document.getElementById('at-leverage').value ? 'complete' : 'missing_leverage'
+  };
+  TRADES.push(newTrade);
+  document.getElementById('add-trade-modal').style.display = 'none';
+  renderAdminDashboard();
+  alert('Trade added successfully. It will appear on the public site after the 48-hour delay.');
+}
+
+function exportCSV() {
+  const headers = ['id','trader','asset','market','side','entry','exit','pnl','status','leverage','quality','openDate','closeDate'];
+  const rows = TRADES.map(t => headers.map(h => {
+    let v = t[h];
+    if (v instanceof Date) v = v.toISOString().split('T')[0];
+    return v ?? '';
+  }).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'trading-arena-trades.csv';
+  a.click();
+}
+
+function logoutAdmin() {
+  adminUnlocked = false;
+  document.getElementById('admin-login-screen').style.display = 'block';
+  document.getElementById('admin-dashboard').style.display = 'none';
+  document.getElementById('admin-password-input').value = '';
+  navigate('home');
+}
+
+// ============================================================
+// JOIN MODAL
+// ============================================================
+function showJoinModal() {
+  document.getElementById('join-modal').style.display = 'flex';
+}
+function hideJoinModal() {
+  document.getElementById('join-modal').style.display = 'none';
+}
+
+// ============================================================
+// LIVE API — fetches from server when running, falls back to mock data
+// ============================================================
+const API_BASE = window.ARENA_API_URL || (['5000','5001'].includes(window.location.port) ? '' : null);
+
+async function fetchLiveTrades() {
+  if (!API_BASE && API_BASE !== '') return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/trades`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.trades || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchLiveStats() {
+  if (!API_BASE && API_BASE !== '') return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/stats`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function mergeLiveTrades(liveTrades) {
+  if (!liveTrades || !liveTrades.length) return;
+  TRADES.length = 0;
+  liveTrades.forEach(t => {
+    TRADES.push({
+      ...t,
+      openDate:  t.open_timestamp  ? new Date(t.open_timestamp)  : new Date(),
+      closeDate: t.close_timestamp ? new Date(t.close_timestamp) : null,
+      market:    t.market_type || t.market || 'futures',
+      sl:        t.sl || 0,
+      targets:   t.targets || [],
+    });
+  });
+  rebuildTraderStatsFromTrades();
+}
+
+function rebuildTraderStatsFromTrades() {
+  const names = ['Cash','Gauls','Titan','Bamp'];
+  names.forEach(name => {
+    if (!TRADERS[name]) return;
+    const closed = TRADES.filter(t => t.trader === name && ['closed','stopped','partial'].includes(t.status) && t.pnl != null);
+    const open   = TRADES.filter(t => t.trader === name && t.status === 'open');
+    if (!closed.length) return;
+
+    const pnls      = closed.map(t => t.pnl);
+    const total     = pnls.reduce((a,b) => a+b, 0);
+    const wins      = pnls.filter(p => p > 0).length;
+    const winRate   = (wins / pnls.length) * 100;
+    const maxDD     = Math.min(...pnls);
+    const avgRet    = total / pnls.length;
+    const riskAdj   = total / (Math.abs(maxDD) + 1);
+    const best      = Math.max(...pnls);
+    const worst     = Math.min(...pnls);
+    const bestT     = closed.find(t => t.pnl === best);
+    const worstT    = closed.find(t => t.pnl === worst);
+
+    const spotClosed    = closed.filter(t => t.market === 'spot' || t.market_type === 'spot');
+    const futClosed     = closed.filter(t => t.market === 'futures' || t.market_type === 'futures');
+    const spotPnls      = spotClosed.map(t => t.pnl);
+    const futPnls       = futClosed.map(t => t.pnl);
+    const spotTotal     = spotPnls.reduce((a,b)=>a+b,0);
+    const futTotal      = futPnls.reduce((a,b)=>a+b,0);
+    const spotWins      = spotPnls.filter(p=>p>0).length;
+    const futWins       = futPnls.filter(p=>p>0).length;
+    const spotDD        = spotPnls.length ? Math.min(...spotPnls) : 0;
+    const futDD         = futPnls.length  ? Math.min(...futPnls)  : 0;
+
+    // Build equity curve from closed trade sequence
+    let equity = [100];
+    let running = 100;
+    closed.slice().sort((a,b) => new Date(a.close_timestamp||0) - new Date(b.close_timestamp||0))
+      .forEach(t => { running = running * (1 + t.pnl/100); equity.push(parseFloat(running.toFixed(2))); });
+
+    TRADERS[name].stats = {
+      ...TRADERS[name].stats,
+      totalReturn:  parseFloat(total.toFixed(2)),
+      winRate:      parseFloat(winRate.toFixed(1)),
+      maxDrawdown:  parseFloat(maxDD.toFixed(2)),
+      riskAdjusted: parseFloat(riskAdj.toFixed(2)),
+      trades:       closed.length,
+      avgReturn:    parseFloat(avgRet.toFixed(2)),
+      bestTrade:    bestT  ? `+${best.toFixed(1)}% (${bestT.asset} ${bestT.side})` : '—',
+      worstTrade:   worstT ? `${worst.toFixed(1)}% (${worstT.asset} ${worstT.side})` : '—',
+      spotReturn:   parseFloat(spotTotal.toFixed(2)),
+      futuresReturn:parseFloat(futTotal.toFixed(2)),
+      spotWR:       spotPnls.length ? parseFloat(((spotWins/spotPnls.length)*100).toFixed(1)) : 0,
+      futuresWR:    futPnls.length  ? parseFloat(((futWins/futPnls.length)*100).toFixed(1))  : 0,
+      spotDD:       parseFloat(spotDD.toFixed(2)),
+      futuresDD:    parseFloat(futDD.toFixed(2)),
+      spotRA:       spotPnls.length ? parseFloat((spotTotal/(Math.abs(spotDD)+1)).toFixed(2)) : 0,
+      futuresRA:    futPnls.length  ? parseFloat((futTotal/(Math.abs(futDD)+1)).toFixed(2))  : 0,
+    };
+    TRADERS[name].equity = equity;
+  });
+}
+
+function updateHomepageStats() {
+  const closed = TRADES.filter(t => ['closed','stopped','partial'].includes(t.status) && t.pnl != null);
+  const wins   = closed.filter(t => t.pnl > 0);
+  const wr     = closed.length ? ((wins.length / closed.length) * 100).toFixed(1) : '—';
+
+  const el1 = document.getElementById('stat-total-trades');
+  const el2 = document.getElementById('stat-win-rate');
+  const el3 = document.getElementById('stat-best-trade');
+  const el4 = document.getElementById('stat-best-trade-sub');
+
+  if (el1) el1.textContent = closed.length || '—';
+  if (el2) el2.textContent = closed.length ? wr + '%' : '—';
+
+  if (closed.length && el3) {
+    const best = closed.reduce((a, b) => (b.pnl > a.pnl ? b : a));
+    el3.textContent = '+' + best.pnl.toFixed(1) + '%';
+    if (el4) el4.textContent = `${best.trader} — ${best.asset} ${best.side}`;
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  // Try to load live data from the API server
+  const [liveTrades, liveStats] = await Promise.all([fetchLiveTrades(), fetchLiveStats()]);
+
+  if (liveTrades) {
+    mergeLiveTrades(liveTrades);
+    console.log(`[Arena] Loaded ${liveTrades.length} live trades from API`);
+  } else {
+    console.log('[Arena] API not available — using built-in demo data');
+  }
+
+  renderHome();
+  updateHomepageStats();
+
+  // Auto-refresh every 5 minutes
+  setInterval(async () => {
+    const fresh = await fetchLiveTrades();
+    if (fresh) {
+      mergeLiveTrades(fresh);
+      if (currentPage === 'home') renderHome();
+      if (currentPage === 'trades') renderActiveTrades();
+    }
+  }, 5 * 60 * 1000);
+});
+</script>
+</body>
+</html>
